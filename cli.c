@@ -50,6 +50,7 @@ main(int argc,char **argv)
 		len=strlen(buff);
 		if(len==1){
 			printf("自分から切る\n");
+			shutdown(s,SHUT_WR);
 			for(;;){
 				char b[8];
 				len = recv(s,b,8,0);
