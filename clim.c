@@ -11,6 +11,7 @@
 #include <errno.h>
 static void *rr(void *);
 static int flag;
+static int fin;
 static int s;
 void handler(int sig) {
 	printf("Handler0\n");
@@ -37,8 +38,8 @@ main(int argc,char **argv)
 	/* シグナル設定 */
 	memset(&act, 0, sizeof(act));
 	act.sa_handler = handler; /* 関数ポインタを指定する */
-  //act.sa_flags = SA_RESTART;
-  act.sa_flags = 0;
+  act.sa_flags |= SA_RESTART;
+  //act.sa_flags = 0;
 	/* SIGINTにシグナルハンドラを設定する */
 	rc = sigaction(SIGUSR1, &act, NULL);
 	if(rc < 0){
@@ -72,23 +73,33 @@ main(int argc,char **argv)
 	tv.tv_usec=0;
 	setsockopt(s,SOL_SOCKET,SO_RCVTIMEO,&tv,sizeof(tv));
 	flag=1;
+	fin=0;
 	pthread_create(&tid,NULL,rr,NULL);
 	for(;;){
 		if(flag==0){
+			printf("flag break\n");
 			break;
 		}
-		printf("Key enter:\n");
+		printf("=>");fflush(stdout);
 		len=read(0, buff,2048);
+		if(len<0){
+			perror("read0");
+			break;
+		}
+		printf("read break =%d\n",len);
 		if(len==1){
 			printf("自分から切る\n");
+			fin=1;
 			shutdown(s,SHUT_WR);
 			for(;flag;){
-				sleep(1);
+				usleep(100);
 			}
-			printf("相手から確認あり");
 			break;
-		}else if(len){
+		}else if(len>0){
 			buff[len]='\0';
+			if(buff[len-1]=='\n'){
+				buff[len-1]='\0';
+			}
 			len=strlen(buff);
 			sret=send(s,buff,len,0);
 			if(sret<0){
@@ -96,11 +107,9 @@ main(int argc,char **argv)
 				shutdown(s,SHUT_WR);
 				break;
 			}
-		}else{
-			printf("read error\n");
 		}
 	}
-	printf("close\n");
+	printf("close00\n");
 	close(s);
 }
 
@@ -112,10 +121,13 @@ void *rr(void *p){
 	pthread_detach(tid);
 	for(;;){
 		len = recv(s,recb,2048,0);
-		printf("recv=%d\n",len);
 		if(len<=0){
-			printf("相手から切断された");
-			close(0);
+			perror("recv");
+			if(fin==1)
+				printf("相手から確認あり\n");
+			else
+				printf("相手から切断された\n");
+			//close(0);
 			break;
 		}
 		if(len){
@@ -125,7 +137,7 @@ void *rr(void *p){
 	}	
 	flag=0;
 	pid_t pid=getpid();
-	//kill(pid,SIGUSR1);
+	kill(pid,SIGUSR1);
 	return NULL;
 }
 
