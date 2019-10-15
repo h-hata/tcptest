@@ -19,15 +19,15 @@ void handler(int sig) {
 }
 main(int argc,char **argv)
 {
-	struct hostent  	*hent;
-	struct sockaddr_in      p_addr;
+	struct hostent	*hent;
+	struct sockaddr_in	p_addr;
 	int 			len;
 	int				ret,rc;
 	char			buff[2048];
 	char			recb[2048];
 	ssize_t		sret;
 	struct timeval tv;
-	pthread_attr_t        attr;
+	pthread_attr_t	attr;
 	pthread_t	tid;
 	struct sigaction act;
 
@@ -38,10 +38,10 @@ main(int argc,char **argv)
 	/* シグナル設定 */
 	memset(&act, 0, sizeof(act));
 	act.sa_handler = handler; /* 関数ポインタを指定する */
-  act.sa_flags |= SA_RESTART;
-  //act.sa_flags = 0;
+	//act.sa_flags |= SA_RESTART;
+	act.sa_flags = 0;
 	/* SIGINTにシグナルハンドラを設定する */
-	rc = sigaction(SIGUSR1, &act, NULL);
+	//rc = sigaction(SIGUSR1, &act, NULL);
 	if(rc < 0){
 		printf("Error: sigaction() %s\n", strerror(errno));
 		_exit(1);
@@ -127,7 +127,7 @@ void *rr(void *p){
 				printf("相手から確認あり\n");
 			else
 				printf("相手から切断された\n");
-			//close(0);
+				close(0);
 			break;
 		}
 		if(len){
@@ -137,7 +137,7 @@ void *rr(void *p){
 	}	
 	flag=0;
 	pid_t pid=getpid();
-	kill(pid,SIGUSR1);
+	//kill(pid,SIGUSR1);
 	return NULL;
 }
 
